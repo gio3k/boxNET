@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Reference Include="Sandbox.Engine">
+        <HintPath>..\..\..\Program Files (x86)\Steam\steamapps\common\sbox\bin\managed\Sandbox.Engine - Copy.dll</HintPath>
+      </Reference>
+      <Reference Include="Sandbox.System">
+        <HintPath>..\..\..\Program Files (x86)\Steam\steamapps\common\sbox\bin\managed\Sandbox.System.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
+    </ItemGroup>
+
+</Project>

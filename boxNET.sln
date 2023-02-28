@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "patcher", "patcher\patcher.csproj", "{DFCF4C82-B459-438F-B210-1E7E9BF96F75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "compiler", "compiler\compiler.csproj", "{38910EFB-EC12-452E-B691-92A4C6B2F446}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DFCF4C82-B459-438F-B210-1E7E9BF96F75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFCF4C82-B459-438F-B210-1E7E9BF96F75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFCF4C82-B459-438F-B210-1E7E9BF96F75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFCF4C82-B459-438F-B210-1E7E9BF96F75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38910EFB-EC12-452E-B691-92A4C6B2F446}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38910EFB-EC12-452E-B691-92A4C6B2F446}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38910EFB-EC12-452E-B691-92A4C6B2F446}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38910EFB-EC12-452E-B691-92A4C6B2F446}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
