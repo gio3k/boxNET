@@ -5,6 +5,7 @@
         <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PostBuildEvent Condition=" '$(OS)' != 'Unix' ">copy compiler.dll "C:\Program Files (x86)\Steam\steamapps\common\sbox\bin\managed\"</PostBuildEvent>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,5 +20,5 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
     </ItemGroup>
-
+    
 </Project>

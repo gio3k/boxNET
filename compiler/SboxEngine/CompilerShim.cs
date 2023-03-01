@@ -1,4 +1,5 @@
-﻿using Sandbox;
+﻿using Microsoft.CodeAnalysis;
+using Sandbox;
 
 namespace BoxNET.Compiler;
 
@@ -55,8 +56,9 @@ public static class CompilerShim
 	public static void AddSourcePath( object internalCompiler, string path ) =>
 		FindOrCreateCompilerWrapper( internalCompiler ).AddSourcePath( path );
 
-	public static void BuildInternal_MoveNext( object internalCompiler )
-	{
-		Sandbox.Internal.GlobalSystemNamespace.Log.Info( $"{internalCompiler} bimn" );
-	}
+	public static Task BuildInternal( object internalCompiler ) =>
+		FindOrCreateCompilerWrapper( internalCompiler ).BuildInternal();
+
+	/*public static void GetSyntaxTree( object internalCompiler, List<SyntaxTree> codeFiles, int? buildNumber = null ) =>
+		FindOrCreateCompilerWrapper( internalCompiler ).GetSyntaxTree( codeFiles, buildNumber );*/
 }

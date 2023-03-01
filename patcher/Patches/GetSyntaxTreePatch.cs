@@ -2,23 +2,23 @@
 
 namespace BoxNET.Patcher;
 
-public class AddSourcePathPatch : IPatch
+public class GetSyntaxTreePatch : IPatch
 {
 	public bool Patch( AssemblyPatcher patcher )
 	{
 		return true;
-		
-		var method = patcher.GetCompilerMethod( "AddSourcePath" );
+
+		var method = patcher.GetCompilerMethod( "GetSyntaxTree" );
 		if ( method == null )
 		{
-			Static.Info( "AddSourcePath method not found" );
+			Static.Info( "GetSyntaxTree method not found" );
 			return false;
 		}
 
 		var module = patcher.AssemblyDefinition.MainModule;
 		var reference =
 			module.ImportReference(
-				typeof(CompilerShim).GetMethod( "AddSourcePath" ) );
+				typeof(CompilerShim).GetMethod( "GetSyntaxTree" ) );
 
 		method.RedirectMethod( reference );
 
