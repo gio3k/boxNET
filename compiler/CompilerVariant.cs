@@ -9,6 +9,8 @@ public abstract class CompilerVariant
 	protected CompilerVariant( CompilerWrapper wrapper ) => Wrapper = wrapper;
 	public CompilerWrapper Wrapper { get; set; }
 
+	public abstract string ShortName { get; }
+
 	public abstract SyntaxTree? ParseText( string text, ParseOptions options, string path = "",
 		Encoding? encoding = null );
 
@@ -72,15 +74,41 @@ public abstract class CompilerVariant
 	public List<string> GetFileExtensions()
 	{
 		if ( _variantToFileExtCache == null ) CacheVariantFileExt();
-		foreach ( var (type, mainExtensions, secondaryExtensions) in _variantToFileExtCache! )
+		foreach ( var (type, mainExtensions, _) in _variantToFileExtCache! )
 		{
 			if ( type != GetType() ) continue;
 			var result = mainExtensions.ToList();
-			//result.AddRange( secondaryExtensions );
 			return result;
 		}
 
 		return null;
+	}
+
+	public List<string> GetAllFileExtensions()
+	{
+		if ( _variantToFileExtCache == null ) CacheVariantFileExt();
+		foreach ( var (type, mainExtensions, secondaryExtensions) in _variantToFileExtCache! )
+		{
+			if ( type != GetType() ) continue;
+			var result = mainExtensions.ToList();
+			result.AddRange( secondaryExtensions );
+			return result;
+		}
+
+		return null;
+	}
+
+	public static List<string> GetAllRegisteredFileExtensions()
+	{
+		if ( _variantToFileExtCache == null ) CacheVariantFileExt();
+		var result = new List<string>();
+		foreach ( var (_, mainExtensions, secondaryExtensions) in _variantToFileExtCache! )
+		{
+			foreach ( var v in mainExtensions.Where( v => !result.Contains( v ) ) ) result.Add( v );
+			foreach ( var v in secondaryExtensions.Where( v => !result.Contains( v ) ) ) result.Add( v );
+		}
+
+		return result;
 	}
 }
 

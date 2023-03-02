@@ -7,9 +7,10 @@ namespace BoxNET.Compiler;
 
 [FileExtension( ".cs" )]
 [SubFileExtension( ".razor" )]
-[SubFileExtension( ".scss" )]
 public class CSharpVariant : CompilerVariant
 {
+	public override string ShortName => "CS";
+
 	public CSharpVariant( CompilerWrapper wrapper ) : base( wrapper )
 	{
 	}

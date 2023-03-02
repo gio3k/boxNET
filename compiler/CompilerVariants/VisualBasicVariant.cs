@@ -7,9 +7,10 @@ namespace BoxNET.Compiler;
 
 [FileExtension( ".vb" )]
 [SubFileExtension( ".razor" )]
-[SubFileExtension( ".scss" )]
 public class VisualBasicVariant : CompilerVariant
 {
+	public override string ShortName => "VB";
+
 	public VisualBasicVariant( CompilerWrapper wrapper ) : base( wrapper )
 	{
 	}

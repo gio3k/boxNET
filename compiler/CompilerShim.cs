@@ -52,4 +52,7 @@ public static class CompilerShim
 
 	public static Task BuildInternal( object internalCompiler ) =>
 		FindOrCreateCompilerWrapper( internalCompiler ).BuildInternal();
+
+	public static void OnFileChanged( object internalCompiler, string file ) =>
+		FindOrCreateCompilerWrapper( internalCompiler ).OnFileChanged( file );
 }

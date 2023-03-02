@@ -1,10 +1,10 @@
 ﻿using System.Reflection;
 using System.Text;
-using BoxNET.Compiler.Remakes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Sandbox;
+using Sandbox.Internal;
 
 namespace BoxNET.Compiler;
 
@@ -12,28 +12,53 @@ public sealed partial class CompilerWrapper : IDisposable
 {
 	private readonly Dictionary<string, string> _sourceFileMap = new();
 	private List<string>? _variantFileExtensions = new();
+	
+	private CompilerVariant? Variant { get; set; }
 
-	public CompilerVariant? Variant { get; set; }
-
-	public async Task BuildInternal()
+	internal async Task BuildInternal()
 	{
 		BuildSuccess = false;
 
 		var refs = BuildReferences();
 		var trees = new List<SyntaxTree>();
 
+		var constants = Settings.DefineConstants.Split( ";",
+			StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
+
+		// THIS SUCKS!!!!!!!!!!!
+		if ( constants.Contains( "FORCE_BASE" ) || Name.Contains( "tool" ))
+		{
+			var md = PortableExecutableReference.CreateFromFile(
+				"C:\\Program Files (x86)\\Steam\\steamapps\\common\\sbox\\assemblies\\package.base.dll" );
+			Log.Info( $"metadata: {md}" );
+			((List<PortableExecutableReference>)refs).Add( md );
+		}
+
 		GetSyntaxTree( trees, CompilerCounter++ );
 
-		var diags = Settings.NoWarn.Split( ";",
-			StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
+		if ( Variant == null )
+		{
+			Log.Warning( $"No compiler variant found for {Name} - does it have any code?" );
+			return;
+		}
 
-		var options = Variant.CreateCompilationOptions();
+		var diagnosticOptions = Settings.NoWarn.Split( ";",
+				StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries )
+			.ToDictionary( v => $"{Variant.ShortName}{v}", _ => ReportDiagnostic.Suppress );
+
+		var options = Variant.CreateCompilationOptions().WithSpecificDiagnosticOptions( diagnosticOptions );
 
 		var compiler = Variant.CreateCompiler( trees.OrderByDescending( v => v.FilePath ), refs, options );
 
 		trees.Clear();
 
 		compiler = RunGenerators( compiler );
+
+		if ( Diagnostics.Any( x => x.Severity == ICSharpCompiler.DiagnosticSeverity.Error ) )
+		{
+			BuildSuccess = false;
+			return;
+		}
 
 		using ( var stream = new MemoryStream() )
 		{
@@ -42,54 +67,71 @@ public sealed partial class CompilerWrapper : IDisposable
 			AsmBinary = stream.ToArray();
 		}
 
+		Diagnostics =
+			Diagnostics.Concat(
+					BuildResult.Diagnostics.Select( x => Util.CreateInternalDiagnostic( x, Name ) ) )
+				.ToArray();
+
 		BuildSuccess = BuildResult.Success;
 
 		if ( BuildSuccess )
 		{
 			using var stream = new MemoryStream( AsmBinary );
 			MetadataReference = Microsoft.CodeAnalysis.MetadataReference.CreateFromStream( stream );
+			if ( MetadataReference == null ) throw new Exception( "MetadataReference == null" );
+			
+			// Save assembly to the assemblies folder (this is a hacky way to do this!)
+			Directory.CreateDirectory( "assemblies" );
+			await File.WriteAllBytesAsync( $"assemblies\\{AssemblyName}.dll", AsmBinary );
 		}
 
 		Log.Info( $"compile {BuildResult.Success} - {this}" );
 	}
 
-	public Compilation RunGenerators( Compilation compiler )
+	private Compilation RunGenerators( Compilation compiler )
 	{
-		if ( Variant is CSharpVariant variant )
+		if ( Variant is CSharpVariant )
 		{
-			var runGeneratorsMethod = InternalCompiler.GetType()
+			var runGeneratorsMethod = _internalCompilerType
 				.GetMethod( "RunGenerators", BindingFlags.NonPublic | BindingFlags.Instance );
-			return (CSharpCompilation)runGeneratorsMethod.Invoke( InternalCompiler, new[] { compiler } );
+			return (CSharpCompilation)runGeneratorsMethod.Invoke( InternalCompiler, new object?[] { compiler } );
 		}
 
-		return compiler;
-		var processor = new Processor();
+		Diagnostics ??= Array.Empty<ICSharpCompiler.Diagnostic>();
 
-		CollectAdditionalFiles( processor.AdditionalFiles );
+		return compiler;
 	}
 
-	public void GetSyntaxTree( List<SyntaxTree> codeFiles, int? buildNumber = null )
+	private void GetSyntaxTree( List<SyntaxTree> codeFiles, int? buildNumber = null )
 	{
 		try
 		{
 			foreach ( var sourceLocation in SourceLocations ) AddSourceFiles( sourceLocation, codeFiles );
-
-			var generatedCode = GeneratedCode.ToString();
-			if ( string.IsNullOrEmpty( generatedCode ) )
-				return;
-
-			if ( Variant is VisualBasicVariant )
-				return;
-
-			var tree = Variant.ParseText( generatedCode, Variant.ParseOptions, Variant.CompilerExtraFileName,
-				Encoding.UTF8 );
-
-			codeFiles.Add( tree );
 		}
 		catch ( Exception e )
 		{
-			Log.Warning( $"boxNET GetSyntaxTree fail! {e}" );
+			Log.Warning( $"boxNET GetSyntaxTree - AddSourceFiles fail! {e}" );
 		}
+
+		var generatedCode = GeneratedCode.ToString();
+		if ( buildNumber != null )
+		{
+			generatedCode +=
+				$"{Environment.NewLine}[assembly: global::System.Reflection.AssemblyVersion(\"0.0.{buildNumber}.0\")]";
+			generatedCode +=
+				$"{Environment.NewLine}[assembly: global::System.Reflection.AssemblyFileVersion(\"0.0.{buildNumber}.0\")]";
+		}
+
+		if ( string.IsNullOrEmpty( generatedCode ) )
+			return;
+
+		if ( Variant is VisualBasicVariant or null )
+			return;
+
+		var tree = Variant.ParseText( generatedCode, Variant.ParseOptions, Variant.CompilerExtraFileName,
+			Encoding.UTF8 );
+
+		codeFiles.Add( tree );
 	}
 
 	/// <summary>
@@ -124,15 +166,30 @@ public sealed partial class CompilerWrapper : IDisposable
 			lock ( _sourceFileMap ) _sourceFileMap[path] = text;
 
 			if ( _variantFileExtensions == null || !_variantFileExtensions.Contains( extension ) )
-			{
-				// Log.Info( $"skipping {file}, ({extension})" );
 				return;
-			}
 
 			var tree = Variant?.ParseText( text, Variant.ParseOptions, path, Encoding.UTF8 );
 
 			lock ( codeFiles ) codeFiles.Add( tree );
 		} );
+	}
+
+	internal void OnFileChanged( string file )
+	{
+		var extension = Path.GetExtension( file );
+		if ( !CompilerVariant.GetAllRegisteredFileExtensions().Contains( extension ) )
+			return;
+		MarkForRecompile();
+		{
+			// check if Group name == Server
+			var property = _internalCompilerType
+				.GetProperty( "Group", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
+			var group = property.GetValue( InternalCompiler );
+			var name = property.PropertyType.GetProperty( "Name", BindingFlags.Public | BindingFlags.Instance )
+				.GetValue( group );
+			if ( (string?)name != "Server" ) return;
+		}
+		Util.StartCodeIterate();
 	}
 
 	public void Dispose()
