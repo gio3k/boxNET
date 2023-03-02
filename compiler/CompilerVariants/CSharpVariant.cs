@@ -23,8 +23,12 @@ public class CSharpVariant : CompilerVariant
 		return CSharpSyntaxTree.ParseText( text, cSharpParseOptions, path, encoding );
 	}
 
-	public override CompilationOptions CreateCompilationOptions() =>
-		new CSharpCompilationOptions( OutputKind.DynamicallyLinkedLibrary ).WithConcurrentBuild( true )
+	public override CompilationOptions CreateCompilationOptions()
+	{
+		var constants = Wrapper.Settings.DefineConstants.Split( ";",
+			StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
+		Log.Info( $"ALLOW_UNSAFE {constants.Contains( Constants.ForceUnsafe ) }" );
+		return new CSharpCompilationOptions( OutputKind.DynamicallyLinkedLibrary ).WithConcurrentBuild( true )
 			.WithDeterministic( Wrapper.Settings.ReleaseMode == CompilerReleaseMode.Release )
 			.WithOptimizationLevel( Wrapper.Settings.ReleaseMode == CompilerReleaseMode.Release
 				? OptimizationLevel.Release
@@ -34,7 +38,8 @@ public class CSharpVariant : CompilerVariant
 			.WithNullableContextOptions( Wrapper.Settings.Nullables
 				? NullableContextOptions.Enable
 				: NullableContextOptions.Disable )
-			.WithAllowUnsafe( false );
+			.WithAllowUnsafe( constants.Contains( Constants.ForceUnsafe ) );
+	}
 
 	public override Compilation CreateCompiler( IEnumerable<SyntaxTree>? syntaxTrees = null,
 		IEnumerable<MetadataReference>? references = null,

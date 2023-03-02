@@ -27,7 +27,7 @@ public sealed partial class CompilerWrapper : IDisposable
 			StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
 
 		// THIS SUCKS!!!!!!!!!!!
-		if ( constants.Contains( "FORCE_BASE" ) )
+		if ( constants.Contains( Constants.ForceReferenceBase ) )
 		{
 			var md = Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(
 				_baseLocation ??
