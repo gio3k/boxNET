@@ -12,7 +12,8 @@ public sealed partial class CompilerWrapper : IDisposable
 {
 	private readonly Dictionary<string, string> _sourceFileMap = new();
 	private List<string>? _variantFileExtensions = new();
-	
+	private static string? _baseLocation;
+
 	private CompilerVariant? Variant { get; set; }
 
 	internal async Task BuildInternal()
@@ -26,11 +27,11 @@ public sealed partial class CompilerWrapper : IDisposable
 			StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
 
 		// THIS SUCKS!!!!!!!!!!!
-		if ( constants.Contains( "FORCE_BASE" ) || Name.Contains( "tool" ))
+		if ( constants.Contains( "FORCE_BASE" ) )
 		{
-			var md = PortableExecutableReference.CreateFromFile(
+			var md = Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(
+				_baseLocation ??
 				"C:\\Program Files (x86)\\Steam\\steamapps\\common\\sbox\\assemblies\\package.base.dll" );
-			Log.Info( $"metadata: {md}" );
 			((List<PortableExecutableReference>)refs).Add( md );
 		}
 
@@ -79,13 +80,20 @@ public sealed partial class CompilerWrapper : IDisposable
 			using var stream = new MemoryStream( AsmBinary );
 			MetadataReference = Microsoft.CodeAnalysis.MetadataReference.CreateFromStream( stream );
 			if ( MetadataReference == null ) throw new Exception( "MetadataReference == null" );
-			
+
 			// Save assembly to the assemblies folder (this is a hacky way to do this!)
 			Directory.CreateDirectory( "assemblies" );
 			await File.WriteAllBytesAsync( $"assemblies\\{AssemblyName}.dll", AsmBinary );
+
+			// Hacky way to find where we saved base assembly
+			if ( Name == "base" )
+			{
+				_baseLocation = Path.GetFullPath( $"assemblies\\{AssemblyName}.dll" );
+				Log.Info( $"base assembly location @ {_baseLocation}" );
+			}
 		}
 
-		Log.Info( $"compile {BuildResult.Success} - {this}" );
+		Log.Info( $"compile status for {Name} == {BuildResult.Success} ({this})" );
 	}
 
 	private Compilation RunGenerators( Compilation compiler )
