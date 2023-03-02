@@ -53,12 +53,6 @@ public static class CompilerShim
 	public static void LoadSettings( object internalCompiler, CompilerSettings settings ) =>
 		FindOrCreateCompilerWrapper( internalCompiler ).LoadSettings( settings );
 
-	public static void AddSourcePath( object internalCompiler, string path ) =>
-		FindOrCreateCompilerWrapper( internalCompiler ).AddSourcePath( path );
-
 	public static Task BuildInternal( object internalCompiler ) =>
 		FindOrCreateCompilerWrapper( internalCompiler ).BuildInternal();
-
-	/*public static void GetSyntaxTree( object internalCompiler, List<SyntaxTree> codeFiles, int? buildNumber = null ) =>
-		FindOrCreateCompilerWrapper( internalCompiler ).GetSyntaxTree( codeFiles, buildNumber );*/
 }

@@ -6,19 +6,8 @@ using Sandbox;
 
 namespace BoxNET.Compiler;
 
-public class CompilerWrapper : IDisposable
+public partial class CompilerWrapper
 {
-	public CompilerWrapper( object internalCompiler )
-	{
-		InternalCompilerReference = new WeakReference( internalCompiler );
-		_subCompiler = new CSharpCompiler( this );
-	}
-
-	private BoxNetCompiler? _subCompiler;
-	protected WeakReference InternalCompilerReference { get; private set; }
-	public object? InternalCompiler => InternalCompilerReference.Target;
-	public bool IsActive => InternalCompilerReference.IsAlive;
-
 	private PropertyInfo? _sourceLocationsProperty;
 	private PropertyInfo? _buildResultProperty;
 	private PropertyInfo? _generatedCodeProperty;
@@ -26,8 +15,10 @@ public class CompilerWrapper : IDisposable
 	private PropertyInfo? _buildSuccessProperty;
 	private PropertyInfo? _settingsProperty;
 	private MethodInfo? _buildReferencesMethod;
+	private MethodInfo? _collectAdditionalFilesMethod;
 	private FieldInfo? _asmBinaryField;
 	private FieldInfo? _metadataReferenceField;
+	private FieldInfo? _compilerCounterField;
 
 	public CompilerSettings Settings
 	{
@@ -114,6 +105,23 @@ public class CompilerWrapper : IDisposable
 		}
 	}
 
+	public int CompilerCounter
+	{
+		get
+		{
+			_compilerCounterField ??= InternalCompiler.GetType()
+				.GetField( "compileCounter", BindingFlags.NonPublic | BindingFlags.Static );
+			return (int)_compilerCounterField.GetValue( InternalCompiler );
+		}
+
+		set
+		{
+			_compilerCounterField ??= InternalCompiler.GetType()
+				.GetField( "compileCounter", BindingFlags.NonPublic | BindingFlags.Static );
+			_compilerCounterField.SetValue( InternalCompiler, value );
+		}
+	}
+
 	public EmitResult BuildResult
 	{
 		get
@@ -166,35 +174,10 @@ public class CompilerWrapper : IDisposable
 			Array.Empty<object>() );
 	}
 
-	public void LoadSettings( CompilerSettings settings )
+	public void CollectAdditionalFiles( Dictionary<string, string> codeFiles )
 	{
-		var constants = settings.DefineConstants.Split( ";",
-			StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
-
-		if ( constants.Contains( "BOXNET_VB" ) )
-			_subCompiler ??= new VbCompiler( this );
-		else if ( constants.Contains( "BOXNET_FSHARP" ) )
-			_subCompiler ??= new FSharpCompiler( this );
-		else
-			_subCompiler ??= new CSharpCompiler( this );
-
-		_subCompiler.LoadSettings( settings );
-	}
-
-	public void AddSourcePath( string path )
-	{
-		// Make sure SourceLocations is initialized
-		SourceLocations ??= new List<BaseFileSystem>();
-
-		// Create a Sandbox.RootFileSystem
-		SourceLocations.Add( FsUtil.CreateRootFileSystem( path ) );
-
-		_subCompiler?.AddSourcePath( path );
-	}
-
-	public Task BuildInternal() => _subCompiler?.BuildInternal() ?? Task.CompletedTask;
-
-	public virtual void Dispose()
-	{
+		_collectAdditionalFilesMethod ??= InternalCompiler.GetType()
+			.GetMethod( "CollectAdditionalFiles", BindingFlags.NonPublic | BindingFlags.Instance );
+		_collectAdditionalFilesMethod.Invoke( InternalCompiler, new object?[] { codeFiles } );
 	}
 }

@@ -1,4 +1,6 @@
-﻿namespace BoxNET.Compiler;
+﻿global using static Sandbox.Internal.GlobalSystemNamespace;
+
+namespace BoxNET.Compiler;
 
 public class Program
 {
