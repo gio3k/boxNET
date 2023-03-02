@@ -15,12 +15,6 @@ public sealed partial class CompilerWrapper : IDisposable
 
 	public CompilerVariant? Variant { get; set; }
 
-	public void LoadSettings( CompilerSettings settings )
-	{
-		var constants = settings.DefineConstants.Split( ";",
-			StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
-	}
-
 	public async Task BuildInternal()
 	{
 		BuildSuccess = false;
@@ -82,6 +76,9 @@ public sealed partial class CompilerWrapper : IDisposable
 
 			var generatedCode = GeneratedCode.ToString();
 			if ( string.IsNullOrEmpty( generatedCode ) )
+				return;
+
+			if ( Variant is VisualBasicVariant )
 				return;
 
 			var tree = Variant.ParseText( generatedCode, Variant.ParseOptions, Variant.CompilerExtraFileName,

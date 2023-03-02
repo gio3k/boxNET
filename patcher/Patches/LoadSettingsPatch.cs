@@ -4,6 +4,8 @@ public class LoadSettingsPatch : IPatch
 {
 	public bool Patch( AssemblyPatcher patcher )
 	{
+		return true;
+
 		var method = patcher.GetCompilerMethod( "LoadSettings" );
 		if ( method == null )
 		{

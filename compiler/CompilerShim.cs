@@ -50,9 +50,6 @@ public static class CompilerShim
 		}
 	}
 
-	public static void LoadSettings( object internalCompiler, CompilerSettings settings ) =>
-		FindOrCreateCompilerWrapper( internalCompiler ).LoadSettings( settings );
-
 	public static Task BuildInternal( object internalCompiler ) =>
 		FindOrCreateCompilerWrapper( internalCompiler ).BuildInternal();
 }
