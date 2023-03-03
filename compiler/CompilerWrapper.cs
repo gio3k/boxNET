@@ -20,19 +20,43 @@ public sealed partial class CompilerWrapper : IDisposable
 	{
 		BuildSuccess = false;
 
-		var refs = BuildReferences();
-		var trees = new List<SyntaxTree>();
-
 		var constants = Settings.DefineConstants.Split( ";",
 			StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
 
-		// THIS SUCKS!!!!!!!!!!!
-		if ( constants.Contains( Constants.ForceReferenceBase ) )
+		if ( constants.Contains( Constants.ForceReferenceGame ) )
+			References.Add( "Sandbox.Game" );
+
+		var refs = BuildReferences();
+		var trees = new List<SyntaxTree>();
+
+		foreach ( var constant in constants )
 		{
-			var md = Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(
-				_baseLocation ??
-				"C:\\Program Files (x86)\\Steam\\steamapps\\common\\sbox\\assemblies\\package.base.dll" );
-			((List<PortableExecutableReference>)refs).Add( md );
+			if ( constant == Constants.ForceReferenceBase )
+			{
+				// Reference base
+				var md = Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(
+					_baseLocation ??
+					"assemblies\\package.base.dll" );
+				((List<PortableExecutableReference>)refs).Add( md );
+			}
+
+			if ( !constant.StartsWith( Constants.PostReference ) )
+			{
+				Log.Info( $"{constant} doesnt start with {Constants.PostReference}" );
+				continue;
+			}
+
+			{
+				var name = $"assemblies\\package.{constant[Constants.PostReference.Length..].Replace( '_', '.' )}.dll";
+				var md = Microsoft.CodeAnalysis.MetadataReference.CreateFromFile( name );
+				if ( md == null )
+				{
+					Log.Warning( $"Couldn't find {name} while compiling {Name}" );
+					continue;
+				}
+
+				((List<PortableExecutableReference>)refs).Add( md );
+			}
 		}
 
 		GetSyntaxTree( trees, CompilerCounter++ );

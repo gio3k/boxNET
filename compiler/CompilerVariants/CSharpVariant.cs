@@ -27,7 +27,6 @@ public class CSharpVariant : CompilerVariant
 	{
 		var constants = Wrapper.Settings.DefineConstants.Split( ";",
 			StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
-		Log.Info( $"ALLOW_UNSAFE {constants.Contains( Constants.ForceUnsafe ) }" );
 		return new CSharpCompilationOptions( OutputKind.DynamicallyLinkedLibrary ).WithConcurrentBuild( true )
 			.WithDeterministic( Wrapper.Settings.ReleaseMode == CompilerReleaseMode.Release )
 			.WithOptimizationLevel( Wrapper.Settings.ReleaseMode == CompilerReleaseMode.Release
