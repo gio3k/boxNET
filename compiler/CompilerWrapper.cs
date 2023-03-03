@@ -41,17 +41,14 @@ public sealed partial class CompilerWrapper : IDisposable
 			}
 
 			if ( !constant.StartsWith( Constants.PostReference ) )
-			{
-				Log.Info( $"{constant} doesnt start with {Constants.PostReference}" );
 				continue;
-			}
 
 			{
 				var name = $"assemblies\\package.{constant[Constants.PostReference.Length..].Replace( '_', '.' )}.dll";
 				var md = Microsoft.CodeAnalysis.MetadataReference.CreateFromFile( name );
 				if ( md == null )
 				{
-					Log.Warning( $"Couldn't find {name} while compiling {Name}" );
+					Log.Warning( $"Couldn't find MetadataReference {name} while compiling {Name}" );
 					continue;
 				}
 
